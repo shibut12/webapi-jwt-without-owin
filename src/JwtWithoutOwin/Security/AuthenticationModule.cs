@@ -32,10 +32,6 @@ namespace JwtWithoutOwin.Security
                 JwtSecurityToken userPayloadToken = GenerateUserClaimsFromJWT(authHeader);
                 if (userPayloadToken != null)
                 {
-                    string userName = userPayloadToken.Claims.Where(c => c.Type == ClaimTypes.Name).Select(c => c.Value).Single();
-                    string userRole = userPayloadToken.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).Single();
-
-                    Thread.CurrentPrincipal = new GenericPrincipal(new GenericIdentity(userName), new []{userRole});
                     return true;
                 }
                 else
