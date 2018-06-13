@@ -1,99 +1,103 @@
-﻿using System;
+﻿using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Security.Principal;
+using System.Threading;
 using System.Web;
+using System.Web.Http.Controllers;
 
 namespace JwtWithoutOwin.Security
 {
     public class AuthenticationModule
     {
-        // ref: http://blogs.quovantis.com/json-web-token-jwt-with-web-api/
-        //private const string communicationKey = "GQDstc21ewfffffffffffFiwDffVvVBrk";
-        //SecurityKey signingKey = new InMemorySymmetricSecurityKey(Encoding.UTF8.GetBytes(communicationKey));
+        private byte[] signingKey;
+        private SymmetricSecurityKey securityKey;
+        private SigningCredentials signingCredentials;
 
+        public AuthenticationModule()
+        {
+            signingKey = Convert.FromBase64String("NDI0NzQzZGItZDRlNS00YWNhLTgxYTctYTQyYmY5M2RmM2Iw");
+            securityKey = new SymmetricSecurityKey(signingKey);
+            signingCredentials = new SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature);
+        }
 
-        // The Method is used to generate token for user
-        public string GenerateTokenForUser(string userName, int userId)
+        internal bool IsUserAuthorized(HttpActionContext actionContext)
+        {
+            var authHeader = FetchFromHeader(actionContext);
+            if (authHeader != null)
+            {
+                JwtSecurityToken userPayloadToken = GenerateUserClaimsFromJWT(authHeader);
+                if (userPayloadToken != null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private string FetchFromHeader(HttpActionContext actionContext)
+        {
+            string requestToken = null;
+
+            var authRequest = actionContext.Request.Headers.Authorization;
+            if (authRequest != null)
+            {
+                requestToken = authRequest.Parameter;
+            }
+
+            return requestToken;
+        }
+
+        public string GenerateTokenFromClaims(List<Claim> claims)
+        {
+            var issuer = "coconutindia";
+            var audience = "all";
+            var key = signingKey;
+            var now = DateTime.UtcNow;
+            var expires = now.AddMinutes(20);
+
+            var token = new JwtSecurityToken(issuer, audience, claims, now, expires, signingCredentials);
+            var handler = new JwtSecurityTokenHandler();
+
+            return handler.WriteToken(token);
+        }
+
+        public JwtSecurityToken GenerateUserClaimsFromJWT(string authToken)
         {
 
 
-            //var signingKey = new InMemorySymmetricSecurityKey(Encoding.UTF8.GetBytes(communicationKey));
-            //var now = DateTime.UtcNow;
-            //var signingCredentials = new SigningCredentials(signingKey,
-            //   SecurityAlgorithms.HmacSha256Signature, SecurityAlgorithms.Sha256Digest);
+            var tokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidAudiences = new string[]{"all"},
+                ValidIssuers = new string[]{ "coconutindia" },
+                IssuerSigningKey = signingCredentials.Key
+            };
 
-            //var claimsIdentity = new ClaimsIdentity(new List<Claim>()
-            //{
-            //    new Claim(ClaimTypes.Name, userName),
-            //    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-            //}, "Custom");
+            var tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken validatedToken;
 
-            //var securityTokenDescriptor = new SecurityTokenDescriptor()
-            //{
-            //    AppliesToAddress = "http://www.example.com",
-            //    TokenIssuerName = "self",
-            //    Subject = claimsIdentity,
-            //    SigningCredentials = signingCredentials,
-            //    Lifetime = new Lifetime(now, now.AddYears(1)),
-            //};
+            try
+            {
 
-            //var tokenHandler = new JwtSecurityTokenHandler();
+                tokenHandler.ValidateToken(authToken, tokenValidationParameters, out validatedToken);
+            }
+            catch (Exception ex)
+            {
+                return null;
 
-            //var plainToken = tokenHandler.CreateToken(securityTokenDescriptor);
-            //var signedAndEncodedToken = tokenHandler.WriteToken(plainToken);
+            }
 
-            //return signedAndEncodedToken;
-
-            throw new NotImplementedException();
-
+            return validatedToken as JwtSecurityToken;
         }
-
-        /// Using the same key used for signing token, user payload is generated back
-        public JwtSecurityToken GenerateUserClaimFromJWT(string authToken)
-        {
-
-            //var tokenValidationParameters = new TokenValidationParameters()
-            //{
-            //    ValidAudiences = new string[]
-            //          {
-            //        "http://www.example.com",
-            //          },
-
-            //    ValidIssuers = new string[]
-            //      {
-            //          "self",
-            //      },
-            //    IssuerSigningKey = signingKey
-            //};
-            //var tokenHandler = new JwtSecurityTokenHandler();
-
-            //SecurityToken validatedToken;
-
-            //try
-            //{
-
-            //    tokenHandler.ValidateToken(authToken, tokenValidationParameters, out validatedToken);
-            //}
-            //catch (Exception)
-            //{
-            //    return null;
-
-            //}
-
-            //return validatedToken as JwtSecurityToken;
-
-            throw new NotImplementedException();
-
-        }
-
-        //private JWTAuthenticationIdentity PopulateUserIdentity(JwtSecurityToken userPayloadToken)
-        //{
-        //    //string name = ((userPayloadToken)).Claims.FirstOrDefault(m => m.Type == "unique_name").Value;
-        //    //string userId = ((userPayloadToken)).Claims.FirstOrDefault(m => m.Type == "nameid").Value;
-        //    //return new JWTAuthenticationIdentity(name) { UserId = Convert.ToInt32(userId), UserName = name };
-
-        //    throw new NotImplementedException();
-        //}
     }
 }

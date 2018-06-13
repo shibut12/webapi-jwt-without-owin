@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using JwtWithoutOwin.Security;
+using System.Collections.Generic;
 using System.Web.Http;
 
 namespace JwtWithoutOwin.Controllers
@@ -11,7 +12,7 @@ namespace JwtWithoutOwin.Controllers
             return new string[] { "value1", "value2" };
         }
 
-        // GET: api/Values/5
+        [JWTAuthenticationFilter]
         public string Get(int id)
         {
             return "value";
