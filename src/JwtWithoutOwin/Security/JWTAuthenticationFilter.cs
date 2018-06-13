@@ -18,10 +18,8 @@ namespace JwtWithoutOwin.Security
         {
             if (!_authModule.IsUserAuthorized(actionContext))
             {
-                actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized);
-                return;
+                actionContext.Response =actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized);
             }
-            base.OnAuthorization(actionContext);
         }
     }
 }
