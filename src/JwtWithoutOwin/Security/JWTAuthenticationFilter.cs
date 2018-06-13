@@ -21,7 +21,6 @@ namespace JwtWithoutOwin.Security
                 actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized);
                 return;
             }
-            base.OnAuthorization(actionContext);
         }
     }
 }
